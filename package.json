@@ -1,14 +1,15 @@
 {
-  "name": "using-express",
+  "name": "Tiny App",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "express_server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Isaiah Christou",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.18.2",
     "ejs": "^1.0.0",
     "express": "^4.16.2"
   }
