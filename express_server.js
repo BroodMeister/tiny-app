@@ -13,16 +13,7 @@ const urlDatabase = {
 };
 
 function generateRandomString() {
-  let newURL = "";
-  const dictionary = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-  do {
-    for (let i = 0; i < 6; i++ ) {
-      newURL += dictionary.charAt(
-        Math.round(Math.random() * dictionary.length));
-    }
-  } while(urlDatabase[newURL])
-  return newURL;
+  return Math.floor((Math.random()) * 1e10).toString(32);
 }
 
 app.get("/", (req, res) => {
