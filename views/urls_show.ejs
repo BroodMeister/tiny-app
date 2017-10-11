@@ -3,11 +3,13 @@
   <head>
     <title>TinyApp</title>
   </head>
-  <body>
-    <header>
-      <% include ./partials/_header %>
+  <body style="margin:30px; padding:20px;">
+    <header style="font-size:36px;">
+      ShortURL: <b><%=shortURL%></b>
     </header>
-    <a href="<%= urls[shortURL] %>"><%= urls[shortURL] %></a>   -   <%= shortURL %>
-    </ul>
+    <form action="/urls/<%= shortURL %>" method="POST" style="font-size:18px; width:300px;">
+      <input id="newURL" name="newURL" type="text" placeholder="<%=urls[shortURL]%>">
+      <input type="submit" value="Update">
+    </form>
   </body>
 </html>
