@@ -12,6 +12,7 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+// Generates a randomized short URL.
 function generateRandomString() {
   return Math.floor((Math.random()) * 1e10).toString(32);
 }
@@ -39,6 +40,7 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/u/:shortURL", (req,res) => {
+  // let longURL = ...
   res.redirect(urlDatabase[req.params.shortURL]);
 });
 
