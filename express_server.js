@@ -1,10 +1,10 @@
-// Modules to import.
+// Required modules.
 const express = require("express");
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 
 
-// The environment.
+// Middleware.
 const app = express();
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
