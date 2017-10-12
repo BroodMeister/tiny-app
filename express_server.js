@@ -2,6 +2,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcrypt');
 
 
 // App setup.
@@ -43,7 +44,7 @@ function generateRandomString() {
 // Adds the new URL into the database.
 function addUrl(longUrl, user) {
   let newShortUrl = "";
-  do {
+ do {
     newShortUrl = generateRandomString(6);
   } while(urlDatabase[newShortUrl])
   urlDatabase[newShortUrl] = { url: longUrl, userID: user };
@@ -59,7 +60,7 @@ function addUser(email, password) {
   users[newUserId] = {
     id: newUserId,
     email: email,
-    password: password
+    password: bcrypt.hashSync(password, 10)
   };
   return newUserId;
 }
@@ -79,7 +80,7 @@ function canRegistered(email) {
 function findUser(email, password) {
   for (let user in users) {
     if (users[user].email === email
-      && users[user].password === password) {
+      && bcrypt.compareSync(password, users[user].password)) {
       return user;
     }
   }
@@ -103,6 +104,10 @@ app.get("/", (req, res) => {
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
+});
+
+app.get("/users.json", (req, res) => {
+  res.json(users);
 });
 
 app.get("/urls", (req, res) => {
@@ -185,6 +190,9 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
+  if (!req.body.email || !req.body.password) {
+    res.sendStatus(400);
+  }
   let userId = findUser(req.body.email, req.body.password);
   if (!userId) {
     res.sendStatus(403);
