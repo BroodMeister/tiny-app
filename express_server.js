@@ -13,8 +13,14 @@ app.use(cookieParser());
 // Global variables.
 const PORT = process.env.PORT || 8080; // default port 8080
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {
+    url: "http://www.lighthouselabs.ca",
+    userID: "userRandomID"
+  },
+  "9sm5xK": {
+    url: "http://www.google.com",
+    userID: "user2RandomID"
+  }
 };
 const users = {
   "userRandomID": {
@@ -35,12 +41,12 @@ function generateRandomString() {
 }
 
 // Adds the new URL into the database.
-function addUrl(longUrl) {
+function addUrl(longUrl, user) {
   let newShortUrl = "";
   do {
     newShortUrl = generateRandomString(6);
   } while(urlDatabase[newShortUrl])
-  urlDatabase[newShortUrl] = longUrl;
+  urlDatabase[newShortUrl] = { url: longUrl, userID: user };
   return newShortUrl;
 }
 
@@ -80,6 +86,16 @@ function findUser(email, password) {
   return "";
 }
 
+function urlsForUser(id) {
+  let subset = {};
+  for (let url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
+      subset[url] = urlDatabase[url];
+    }
+  }
+  return subset;
+}
+
 // Request-response:
 app.get("/", (req, res) => {
   res.end("Hello!\n");
@@ -90,32 +106,51 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let templateVars = {
-    urls: urlDatabase,
-    user: users[req.cookies.user_id] ? users[req.cookies.user_id].email : ""
-  };
-  res.render("urls_index", templateVars);
+  let userId = req.cookies.user_id;
+  let urls = urlsForUser(userId);
+  if (!userId || !users[userId]) {
+    res.redirect("/login");
+  } else {
+    let templateVars = {
+      urls: urls,
+      user: users[userId].email
+    };
+    res.render("urls_index", templateVars);
+  }
 });
 
 app.get("/urls/:id", (req, res) => {
-  let templateVars = {
-    shortURL: req.params.id,
-    urls: urlDatabase,
-    user: users[req.cookies.user_id] ? users[req.cookies.user_id].email : ""
-  };
-  res.render("urls_show", templateVars);
+  let shortUrl = req.params.id;
+  let userId = req.cookies.user_id;
+  if(!userId || !users[userId]) {
+    res.redirect("/login");
+  } else if (urlDatabase[shortUrl].userID !== userId) {
+    res.sendStatus(403);
+  } else {
+    let templateVars = {
+      shortUrl: shortUrl,
+      url: urlDatabase[shortUrl].url,
+      user: users[userId].email
+    };
+    res.render("urls_show", templateVars);
+  }
 });
 
 app.get("/urls/new", (req, res) => {
-  let templateVars = {
-    user: users[req.cookies.user_id] ? users[req.cookies.user_id].email : ""
-  };
-  res.render("urls_new", templateVars);
+  let userId = req.cookies.user_id;
+  if(!userId || !users[userId]) {
+    res.redirect("/login");
+  } else {
+    let templateVars = {
+      user: users[userId].email
+    };
+    res.render("urls_new", templateVars);
+  }
 });
 
 app.get("/u/:shortURL", (req,res) => {
   // let longURL = ...
-  res.redirect(urlDatabase[req.params.shortURL]);
+  res.redirect(urlDatabase[req.params.shortURL].url);
 });
 
 app.get("/register", (req, res) => {
@@ -127,24 +162,31 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
-  res.redirect("/urls");
+  if (req.cookies.user_id === urlDatabase[req.params.id].userID) {
+    delete urlDatabase[req.params.id];
+    res.redirect("/urls");
+  } else {
+    res.sendStatus(403);
+  }
 });
 
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.newURL;
-  res.redirect("/urls");
+  if (req.cookies.user_id === urlDatabase[req.params.id].userID) {
+    urlDatabase[req.params.id].url = req.body.newURL;
+    res.redirect("/urls");
+  } else {
+    res.sendStatus(403);
+  }
 });
 
 app.post("/urls", (req, res) => {
-  let shortURL = addUrl(req.body.longURL);
+  let shortURL = addUrl(req.body.longURL, req.cookies.user_id);
   res.redirect(`/urls/${shortURL}`);
 });
 
 app.post("/login", (req, res) => {
   let userId = findUser(req.body.email, req.body.password);
   if (!userId) {
-    // email, password does not match
     res.sendStatus(403);
   }
   res.cookie("user_id", userId);
