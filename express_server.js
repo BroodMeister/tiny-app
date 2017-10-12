@@ -1,15 +1,18 @@
 // Required modules.
 const express = require("express");
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 
 
 // App setup.
 const app = express();
 app.set('view engine', 'ejs');
-app.use(bodyParser.urlencoded({extended: true}));
-app.use(cookieParser());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieSession({
+  name: "session",
+  keys: ["This-is-my-secrete-key"],
+  maxAge: 60 * 60 * 1000 // 1 hour
 
 // Global variables.
 const PORT = process.env.PORT || 8080; // default port 8080
@@ -111,7 +114,7 @@ app.get("/users.json", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let userId = req.cookies.user_id;
+  let userId = req.session.user_id;
   let urls = urlsForUser(userId);
   if (!userId || !users[userId]) {
     res.redirect("/login");
@@ -126,7 +129,7 @@ app.get("/urls", (req, res) => {
 
 app.get("/urls/:id", (req, res) => {
   let shortUrl = req.params.id;
-  let userId = req.cookies.user_id;
+  let userId = req.session.user_id;
   if(!userId || !users[userId]) {
     res.redirect("/login");
   } else if (urlDatabase[shortUrl].userID !== userId) {
@@ -142,7 +145,7 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  let userId = req.cookies.user_id;
+  let userId = req.session.user_id;
   if(!userId || !users[userId]) {
     res.redirect("/login");
   } else {
@@ -167,7 +170,7 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  if (req.cookies.user_id === urlDatabase[req.params.id].userID) {
+  if (req.session.user_id === urlDatabase[req.params.id].userID) {
     delete urlDatabase[req.params.id];
     res.redirect("/urls");
   } else {
@@ -176,7 +179,7 @@ app.post("/urls/:id/delete", (req, res) => {
 });
 
 app.post("/urls/:id", (req, res) => {
-  if (req.cookies.user_id === urlDatabase[req.params.id].userID) {
+  if (req.session.user_id === urlDatabase[req.params.id].userID) {
     urlDatabase[req.params.id].url = req.body.newURL;
     res.redirect("/urls");
   } else {
@@ -185,7 +188,7 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  let shortURL = addUrl(req.body.longURL, req.cookies.user_id);
+  let shortURL = addUrl(req.body.longURL, req.session.user_id);
   res.redirect(`/urls/${shortURL}`);
 });
 
@@ -197,12 +200,12 @@ app.post("/login", (req, res) => {
   if (!userId) {
     res.sendStatus(403);
   }
-  res.cookie("user_id", userId);
+  req.session.user_id = userId;
   res.redirect("/");
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  req.session.user_id = null;
   res.redirect("/urls");
 });
 
@@ -212,7 +215,7 @@ app.post("/register", (req, res) => {
   }
   if (canRegistered()) {
     let userId = addUser(req.body.email, req.body.password);
-    res.cookie("user_id", userId);
+    req.session.user_id = userId;
     res.redirect("/urls");
   } else {
     res.sendStatus(400);
@@ -220,5 +223,5 @@ app.post("/register", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
+  console.log(`TinyApp listening on port ${PORT}!`);
 });
