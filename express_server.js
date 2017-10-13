@@ -103,7 +103,12 @@ function urlsForUser(id) {
 
 // Request-response:
 app.get("/", (req, res) => {
-  res.end("Hello!\n");
+  let userId = req.session.user_id;
+  if (!userId || !users[userId]) {
+    res.redirect("/login");
+  } else {
+    res.redirect("/urls");
+  }
 });
 
 app.get("/urls.json", (req, res) => {
