@@ -70,7 +70,7 @@ function addUser(email, password) {
 }
 
 // Checks to see if the provided email exists in the database.
-function canRegistered(email) {
+function isRegistered(email) {
   let flag = true;
   for (let user in users) {
     if (users[user].email === email) {
@@ -91,6 +91,7 @@ function findUser(email, password) {
   return "";
 }
 
+// Returns the subset of the URL database.
 function urlsForUser(id) {
   let subset = {};
   for (let url in urlDatabase) {
@@ -101,7 +102,7 @@ function urlsForUser(id) {
   return subset;
 }
 
-// Request-response:
+// Get request responses.
 app.get("/", (req, res) => {
   let userId = req.session.user_id;
   if (!userId || !users[userId]) {
@@ -133,6 +134,18 @@ app.get("/urls", (req, res) => {
   }
 });
 
+app.get("/urls/new", (req, res) => {
+  let userId = req.session.user_id;
+  if(!userId || !users[userId]) {
+    res.redirect("/login");
+  } else {
+    let templateVars = {
+      user: users[userId].email
+    };
+    res.render("urls_new", templateVars);
+  }
+});
+
 app.get("/urls/:id", (req, res) => {
   let shortUrl = req.params.id;
   let userId = req.session.user_id;
@@ -149,18 +162,6 @@ app.get("/urls/:id", (req, res) => {
       user: users[userId].email
     };
     res.render("urls_show", templateVars);
-  }
-});
-
-app.get("/urls/new", (req, res) => {
-  let userId = req.session.user_id;
-  if(!userId || !users[userId]) {
-    res.redirect("/login");
-  } else {
-    let templateVars = {
-      user: users[userId].email
-    };
-    res.render("urls_new", templateVars);
   }
 });
 
@@ -191,6 +192,8 @@ app.get("/login", (req, res) => {
     res.redirect("/urls");
   }
 });
+
+// Post request responses.
 
 app.post("/urls/:id/delete", (req, res) => {
   let userId = req.session.user_id;
@@ -258,7 +261,7 @@ app.post("/register", (req, res) => {
   if (!email || !password) {
     res.sendStatus(400);
   } else {
-    if (canRegistered(email)) {
+    if (isRegistered(email)) {
       let userId = addUser(email, password);
       req.session.user_id = userId;
       res.redirect("/urls");
