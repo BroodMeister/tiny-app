@@ -48,7 +48,7 @@ function generateRandomString() {
 // Adds the new URL into the database.
 function addUrl(longUrl, user) {
   let newShortUrl = "";
- do {
+  do {
     newShortUrl = generateRandomString(6);
   } while(urlDatabase[newShortUrl])
   urlDatabase[newShortUrl] = { url: longUrl, userID: user };
@@ -118,7 +118,7 @@ app.get("/urls", (req, res) => {
   let userId = req.session.user_id;
   let urls = urlsForUser(userId);
   if (!userId || !users[userId]) {
-    res.sendStatus(401);  // Unauthorized
+    res.redirect("/login");
   } else {
     let templateVars = {
       urls: urls,
@@ -132,11 +132,11 @@ app.get("/urls/:id", (req, res) => {
   let shortUrl = req.params.id;
   let userId = req.session.user_id;
   if(!userId || !users[userId]) {
-    res.sendStatus(401);  // Unauthorized
+    res.sendStatus(401);
   } else if (!urlDatabase[shortUrl]){
-    res.sendStatus(404);  // Not Found
+    res.sendStatus(404);
   }  else if (urlDatabase[shortUrl].userID !== userId) {
-    res.sendStatus(403);  // Forbidden
+    res.sendStatus(403);
   } else {
     let templateVars = {
       shortUrl: shortUrl,
@@ -161,9 +161,9 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/u/:shortURL", (req,res) => {
   // let longURL = ...
-    let shortUrl = req.params.shortURL;
+  let shortUrl = req.params.shortURL;
   if(!urlDatabase[shortUrl]) {
-    res.sendStatus(404);  // Not Found
+    res.sendStatus(404);
   } else {
     res.redirect(urlDatabase[shortUrl].url);
   }
@@ -172,7 +172,7 @@ app.get("/u/:shortURL", (req,res) => {
 app.get("/register", (req, res) => {
   let userId = req.session.user_id;
   if(!userId || !users[userId]) {
-    res.render("register", {});
+    res.render("register", { errMsg: "" });
   } else {
     res.redirect("/urls");
   }
@@ -190,16 +190,16 @@ app.get("/login", (req, res) => {
 app.post("/urls/:id/delete", (req, res) => {
   let userId = req.session.user_id;
   if(!userId || !users[userId]) {
-    res.sendStatus(401);  // Unauthorized
+    res.sendStatus(401);
   } else {
     let shortUrl = req.params.id;
     if (!urlDatabase[shortUrl]) {
-      res.sendStatus(400); // Bad Request
+      res.sendStatus(400);
     } else if (req.session.user_id === urlDatabase[shortUrl].userID) {
       delete urlDatabase[req.params.id];
       res.redirect("/urls");
     } else {
-      res.sendStatus(403);  // Forbidden
+      res.sendStatus(403);
     }
   }
 });
@@ -207,13 +207,13 @@ app.post("/urls/:id/delete", (req, res) => {
 app.post("/urls/:id", (req, res) => {
   let userId = req.session.user_id;
   if(!userId || !users[userId]) {
-    res.sendStatus(401);  // Unauthorized
+    res.sendStatus(401);
   } else {
     if (req.session.user_id === urlDatabase[req.params.id].userID) {
       urlDatabase[req.params.id].url = req.body.newURL;
       res.redirect("/urls");
     } else {
-      res.sendStatus(403);  // Forbidden
+      res.sendStatus(403);
     }
   }
 });
@@ -221,7 +221,7 @@ app.post("/urls/:id", (req, res) => {
 app.post("/urls", (req, res) => {
   let userId = req.session.user_id;
   if(!userId || !users[userId]) {
-    res.sendStatus(401);  // Unauthorized
+    res.sendStatus(401);
   } else {
     let shortURL = addUrl(req.body.longURL, userId);
     res.redirect(`/urls/${shortURL}`);
@@ -230,11 +230,11 @@ app.post("/urls", (req, res) => {
 
 app.post("/login", (req, res) => {
   if (!req.body.email || !req.body.password) {
-    res.sendStatus(400);  // Bad Request
+    res.sendStatus(400);
   } else {
     let userId = findUser(req.body.email, req.body.password);
     if (!userId) {
-      res.sendStatus(403);  // Forbidden
+      res.sendStatus(403);
     } else {
       req.session.user_id = userId;
       res.redirect("/urls");
@@ -248,15 +248,17 @@ app.post("/logout", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  if (!req.body.email || !req.body.password) {
-    res.sendStatus(400);  // Bad Request
+  let email = req.body.email;
+  let password = req.body.password;
+  if (!email || !password) {
+    res.sendStatus(400);
   } else {
-    if (canRegistered()) {
-      let userId = addUser(req.body.email, req.body.password);
+    if (canRegistered(email)) {
+      let userId = addUser(email, password);
       req.session.user_id = userId;
       res.redirect("/urls");
     } else {
-      res.sendStatus(400);  // Bad Request
+      res.render("register", { errMsg: `${email} had already been registered.` });
     }
   }
 });
