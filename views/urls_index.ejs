@@ -24,7 +24,9 @@
       <% for (var url in urls) { %>
           <tr style="height:30px;">
             <form action="/urls/<%=url%>/delete" method="POST">
-              <td><%=url%></td>
+              <td>
+		<a href="http://localhost:8080/u/<%=url%>">http://localhost:8080/u/<%=url%></a>
+	      </td>
               <td>&rarr;</td>
               <td style="width:250px;">
                 <a href="<%=urls[url].url%>"><%=urls[url].url%></a>
